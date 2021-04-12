@@ -79,5 +79,7 @@ mv /usr/local/phantomjs-2.1.1-linux-x86_64/ /usr/local/phantomjs
 
 ln -s /usr/local/phantomjs/bin/phantomjs /usr/bin/
 
+修改源码中get_key函数下的Nacos组件地址为相应组件IP
+
 python3 wechat.py
 ```

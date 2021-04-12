@@ -16,7 +16,7 @@ def get_key(x):
     :param x: 组件名
     :return: 值
     '''
-    client = nacos.NacosClient("49.232.159.40:8848", namespace="public")
+    client = nacos.NacosClient("127.0.0.1:8848", namespace="public")
     res = client.get_config("common.json", "DEFAULT_GROUP")
     return json.loads(res)[x]
 
