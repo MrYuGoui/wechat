@@ -47,11 +47,13 @@ docker run -itd --name=wechat selenium/standalone-chrome
 ```
 
 ## 2.Nacos
-登录http://IP:8848/nacos，默认账户密码nacos/nacos
+登录http://IP:8848/nacos
+默认账户密码nacos/nacos
 在默认命名空间public导入nacos_config.zip配置文件。
 
 ## 3.Minio
-登录http://IP:9000，账号密码参考docker创建时的环境参数，即上文的root/mima。
+登录http://IP:9000
+账号密码参考docker创建时的环境参数，即上文的root/mima。
 右下角创建文件桶，命名wechat，编辑策略为可读写。
 
 ## 4.Selenium
