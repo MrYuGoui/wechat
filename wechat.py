@@ -1,4 +1,4 @@
-import requests, os, time, json, random, itchat, re, pymongo, nacos
+import requests, os, time, json, random, itchat, re, pymongo
 from itchat.content import *
 from collections import Counter
 from minio import Minio
@@ -9,16 +9,62 @@ from pyecharts.render import make_snapshot
 from pyecharts.charts import *
 from pyecharts import options as opts
 
-
-def get_key(x):
-    '''
-    获取各个组件的账号密码
-    :param x: 组件名
-    :return: 值
-    '''
-    client = nacos.NacosClient("127.0.0.1:8848", namespace="public")
-    res = client.get_config("common.json", "DEFAULT_GROUP")
-    return json.loads(res)[x]
+res_json = {
+    "mongo": {
+        "host": "49.232.159.40",
+        "port": 27017,
+        "database": "wechat",
+        "username": "root",
+        "password": "YuHaoWei0830!"
+    },
+    "minio": {
+        "host": "49.232.159.40",
+        "port": 9000,
+        "username": "minioadmin",
+        "password": "minioadmin"
+    },
+    "pyecharts": [
+        "funnel",
+        "pie",
+        "wordcloud",
+        "bar",
+        "line"
+    ],
+    "ai_gen": 1,
+    "dragon": [
+        "无人能出其右",
+        "我愿称你为最强",
+        "感谢你为本群增加了活跃度",
+        "已经仅次于我了",
+        "隔着屏幕我都能闻到键盘在冒火星",
+        "不会吧不会吧，居然有人像我一样无聊",
+        "本数据纯属虚构，请勿核查，版权所有，翻版必究",
+        "脱口秀大会没有你，我把电视砸了，老铁们我做的对么？",
+        "干啥啥不行，水群第一名",
+        "按照一个字一个砖头来算，够垒一座坟了",
+        "贿赂我可以清空他/它的数据，你们考虑下？",
+        "我怀疑你是群主请来的托",
+        "你喜欢唱、跳、Rap和水群？",
+        "舍得一身剐，敢把龙王拉下马！",
+        "其他人都是哑巴么",
+        "承包了10.24%的群聊消息",
+        "战胜了95.27%群友",
+        "前无古人后无来者",
+        "累死你个鳖孙",
+        "留给其他人的时间不多了",
+        "难道你也是个聊天机器人？",
+        "来人，掌嘴！",
+        "不听不听王八念经",
+        "我瞎编的，如有雷同，不胜荣幸",
+        "和蜘蛛侠、死侍并称嘴炮三巨头",
+        "荣升五代目嘴影",
+        "拦都拦不住，TMD，我都烦死了",
+        "明年年初，中美合拍西游记即将开机，我将出演龙王三太子，请大家多多支持",
+        "给龙王来一杯卡布奇诺，开始你的脱口秀",
+        "你们可能不知道几句话赢得龙王是什么概念，我们用两个字来形容：唠怪！",
+        "你今天能蝉联一整天龙王，我~当~场~就把这个电脑屏幕吃掉！"
+    ]
+}
 
 
 class MongoTool():
@@ -110,55 +156,14 @@ class ProcessWord():
         '''
 
         # 轮询信息中是否存在接口的关键字，如果存在则调用接口，反之交给图灵机器人
-        api_word = get_key("api_word")
-        api_num = [each for each in api_word if each in msg]
-        if len(api_num) != 0:
-            cache = api_word[api_num[0]]
-            if cache["类型"] == "接口0":
-                return "我可以识别以下关键字：" + "，".join([each for each in api_word])
-            elif cache["类型"] == "接口1":
-                return self.api_func1(cache["链接"])
-            elif cache["类型"] == "接口2":
-                return self.api_func2(api_num[0])
-            elif cache["类型"] == "接口3":
-                return self.api_func3()
-            elif cache["类型"] == "接口4":
-                return self.api_func4(self.group)
-            else:
-                pass
+        if "龙王" in msg:
+            return self.api_func(self.group)
         else:
-            return self.tuling(msg)
+            res = requests.get(f"http://172.17.0.5:8080/kw?keyword={msg}")
+            # print(type(res.text))
+            return json.loads(res.text)["content"]
 
-    def api_func1(self, link):
-        '''
-        沙雕网站接口：https://shadiao.app/
-        :param link:接口地址
-        :return:
-        '''
-        res = requests.get(link).text
-        return res
-
-    def api_func2(self, kw):
-        '''
-        小破站接口：https://wangpinpin.com/
-        :param kw:关键字
-        :return:
-        '''
-        res = requests.get("https://api.wangpinpin.com/unAuth/findTypeList?t=DOG")
-        cache = [each for each in json.loads(res.text)["data"] if each["name"] == kw]
-        response = requests.get(f"https://api.wangpinpin.com/unAuth/getDoglickingDiary?typeId={cache[0]['id']}")
-        return json.loads(response.text)["data"]
-
-    def api_func3(self):
-        '''
-        小破站接口：https://wangpinpin.com/
-        :return: 每日一文
-        '''
-        res = requests.get("https://api.wangpinpin.com/unAuth/getEveryDayText")
-        res_data = json.loads(res.text)["data"]
-        return f"{res_data['title']}\n作者：{res_data['author']}\n{res_data['content']}"
-
-    def api_func4(self, group_id):
+    def api_func(self, group_id):
         '''
         统计龙王数据
         :param group_id:群组名称
@@ -177,20 +182,6 @@ class ProcessWord():
         # gk = get_key("dragon")
         img = PyE(res_sort[:10]).start_func()
         return img
-        # return f"{res_sort[0][0]}今日发言{res_sort[0][1]}次，{random.choice(gk)}"
-
-    def tuling(self, words):
-        '''
-        智能问答
-        :param words:对话内容
-        :return:
-        '''
-        limit = 8
-        api_key = "0d264fefe55c487255e8fc245ee5639c"
-        api_secret = "mpdhgj5ni4qk"
-        res = requests.get(
-            url=f"http://i.itpk.cn/api.php?question={words}&limit={limit}&api_key={api_key}&api_secret={api_secret}")
-        return res.text
 
 
 class PyE():
@@ -236,7 +227,8 @@ class PyE():
                                                       subtitle_textstyle_opts=opts.TextStyleOpts(font_size=self.fs2)),
                             legend_opts=opts.LegendOpts(is_show=False))
         res.render(f"{self.file_name}.html")
-        make_snapshot(snapshot, f"{self.file_name}.html", f"{self.file_name}.jpeg", is_remove_html=True, pixel_ratio=2, delay=1)
+        make_snapshot(snapshot, f"{self.file_name}.html", f"{self.file_name}.jpeg", is_remove_html=True, pixel_ratio=2,
+                      delay=1)
         return
 
     def funnel_func(self, data_list):
@@ -253,7 +245,8 @@ class PyE():
 
     def wordcloud_func(self, data_list):
         func_image = WordCloud(init_opts=opts.InitOpts(bg_color="#ffffff"))
-        func_image.add("龙王", data_pair=data_list, word_size_range=[10, 80], shape=random.choice(['circle', 'cardioid', 'diamond', 'triangle-forward', 'triangle', 'pentagon', 'star']))
+        func_image.add("龙王", data_pair=data_list, word_size_range=[10, 80], shape=random.choice(
+            ['circle', 'cardioid', 'diamond', 'triangle-forward', 'triangle', 'pentagon', 'star']))
         func_image.set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}", position="outside"))
         return func_image
 
@@ -261,7 +254,8 @@ class PyE():
         func_image = Bar(init_opts=opts.InitOpts(bg_color="#ffffff"))
         func_image.add_xaxis([each[0] for each in data_list])
         func_image.add_yaxis("龙王", [each[1] for each in data_list], category_gap="40%")
-        func_image.set_series_opts(label_opts=opts.LabelOpts(formatter="{c}", position=random.choice(["inside", "outside"])))
+        func_image.set_series_opts(
+            label_opts=opts.LabelOpts(formatter="{c}", position=random.choice(["inside", "outside"])))
         func_image.set_global_opts(xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-20)))
         return func_image
 
@@ -276,8 +270,10 @@ class PyE():
     def line_func(self, data_list):
         func_image = Line(init_opts=opts.InitOpts(bg_color="#ffffff"))
         func_image.add_xaxis([each[0] for each in data_list])
-        func_image.add_yaxis("龙王", [each[1] for each in data_list], is_smooth=random.choice([True, False]), symbol_size=10,
-                             symbol=random.choice(['circle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow']))
+        func_image.add_yaxis("龙王", [each[1] for each in data_list], is_smooth=random.choice([True, False]),
+                             symbol_size=10,
+                             symbol=random.choice(
+                                 ['circle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow']))
         func_image.set_series_opts(label_opts=opts.LabelOpts(position=random.choice(["outside"])))
         func_image.set_global_opts(xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-20)))
         return func_image
@@ -329,7 +325,8 @@ def listen_message(msg):
     elif m["type"] == "Picture" and msg["Content"] != "":
         msg.download(msg["FileName"])
         res = get_key("minio")
-        Client = Minio(f"{res['host']}:{res['port']}", access_key=res['username'], secret_key=res['password'], secure=False)
+        Client = Minio(f"{res['host']}:{res['port']}", access_key=res['username'], secret_key=res['password'],
+                       secure=False)
         Client.fput_object("wechat", msg["FileName"], msg["FileName"])
         os.remove(msg["FileName"])
         return
@@ -343,13 +340,16 @@ def listen_message(msg):
             res = MongoTool().search_all({"msgid": search_id})
             result = res[0]
             if result["type"] == "Text":
-                itchat.send_msg(msg=f"我拦截了{result['group']}群聊{result['player']}说的一句话：{result['info']}", toUserName=myself["UserName"])
+                itchat.send_msg(msg=f"我拦截了{result['group']}群聊{result['player']}说的一句话：{result['info']}",
+                                toUserName=myself["UserName"])
                 return
             elif result["type"] == "Picture":
                 info = get_key("minio")
-                Client = Minio(f"{info['host']}:{info['port']}", access_key=info['username'], secret_key=info['password'], secure=False)
+                Client = Minio(f"{info['host']}:{info['port']}", access_key=info['username'],
+                               secret_key=info['password'], secure=False)
                 img_link = Client.presigned_get_object('wechat', result['file'], expires=timedelta(days=1))
-                itchat.send_msg(msg=f"我拦截了{result['group']}群聊{result['player']}发的一张图：{img_link}", toUserName=myself["UserName"])
+                itchat.send_msg(msg=f"我拦截了{result['group']}群聊{result['player']}发的一张图：{img_link}",
+                                toUserName=myself["UserName"])
                 return
 
 
